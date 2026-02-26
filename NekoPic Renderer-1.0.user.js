@@ -20,11 +20,11 @@
 
             if (
                 start.nodeType === Node.TEXT_NODE &&
-                start.textContent.includes('<neko-safe>') &&
+                start.textContent.includes('<neko-img>') &&
                 link.nodeType === Node.ELEMENT_NODE &&
                 link.tagName === 'A' &&
                 end.nodeType === Node.TEXT_NODE &&
-                end.textContent.includes('</neko-safe>')
+                end.textContent.includes('</neko-img>')
             ) {
                 const url = link.href;
 
