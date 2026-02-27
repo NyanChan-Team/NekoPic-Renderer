@@ -1,16 +1,44 @@
 // ==UserScript==
-// @name         NekoPic Renderer
-// @namespace    nekopicrender
-// @version      1.0
+// @name         NekoPic Renderer Beta
+// @namespace    nekopicrenderbeta
+// @version      1.1
 // @match        *://www.jeuxvideo.com/*
-// @grant        none
 // @author       DigitalNyan
 // ==/UserScript==
 
 (function () {
     'use strict';
 
+    function createImageBlock(url) {
+        const container = document.createElement('div');
+        container.setAttribute('bis_skin_checked', '1');
+
+        const p = document.createElement('p');
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.className = 'xXx ';
+
+        const img = document.createElement('img');
+        img.className = 'img-shack';
+        img.width = 68;
+        img.height = 51;
+        img.src = url;
+        img.alt = url;
+
+        a.appendChild(img);
+        p.appendChild(a);
+        p.appendChild(document.createElement('br'));
+
+        container.appendChild(p);
+
+        return container;
+    }
+
     function processParagraph(p) {
+        if (p.dataset.nekoProcessed) return;
+
         const nodes = Array.from(p.childNodes);
 
         for (let i = 0; i < nodes.length - 2; i++) {
@@ -28,32 +56,29 @@
             ) {
                 const url = link.href;
 
-                const a = document.createElement('a');
-                a.href = url;
-                a.target = '_blank';
-                a.className = 'xXx';
+                const imageBlock = createImageBlock(url);
 
-                const img = document.createElement('img');
-                img.src = url;
-                img.className = 'img-shack';
-                img.width = 68;
-                img.height = 51;
-                img.alt = url;
-
-                a.appendChild(img);
-
-                p.insertBefore(a, start);
+                p.parentNode.insertBefore(imageBlock, p);
 
                 start.remove();
                 link.remove();
                 end.remove();
+
+                p.dataset.nekoProcessed = "true";
+                break;
             }
         }
     }
 
     function scan() {
+        // les posts
         document
             .querySelectorAll('.txt-msg p')
+            .forEach(processParagraph);
+
+        // les signature
+        document
+            .querySelectorAll('.signature-msg p, .bloc-signature-msg p')
             .forEach(processParagraph);
     }
 
@@ -63,4 +88,5 @@
         childList: true,
         subtree: true
     });
+
 })();
