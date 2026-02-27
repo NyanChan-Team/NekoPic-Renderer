@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         NekoPic Renderer Beta
-// @namespace    nekopicrenderbeta
+// @name         NekoPic Renderer
+// @namespace    nekopicrender
 // @version      1.1
 // @match        *://www.jeuxvideo.com/*
 // @author       DigitalNyan
@@ -24,13 +24,21 @@
         img.className = 'img-shack';
         img.width = 68;
         img.height = 51;
-        img.src = url;
+
+        if (url.includes("noelshack.com/fichiers/")) {
+            img.src = url
+                .replace("fichiers", "minis")
+                .replace(".jpeg", ".png")
+                .replace(".jpg", ".png");
+        } else {
+            img.src = url;
+        }
+
         img.alt = url;
 
         a.appendChild(img);
         p.appendChild(a);
         p.appendChild(document.createElement('br'));
-
         container.appendChild(p);
 
         return container;
@@ -39,47 +47,35 @@
     function processParagraph(p) {
         if (p.dataset.nekoProcessed) return;
 
-        const nodes = Array.from(p.childNodes);
+        let html = p.innerHTML;
 
-        for (let i = 0; i < nodes.length - 2; i++) {
-            const start = nodes[i];
-            const link  = nodes[i + 1];
-            const end   = nodes[i + 2];
+        // <neko-img> ou &lt;neko-img&gt; ? Telle est la question :)
+        const regex = /(?:<neko-img>|&lt;neko-img&gt;)\s*<a[^>]+href="([^"]+)"[^>]*>.*?<\/a>\s*(?:<\/neko-img>|&lt;\/neko-img&gt;)/gi;
 
-            if (
-                start.nodeType === Node.TEXT_NODE &&
-                start.textContent.includes('<neko-img>') &&
-                link.nodeType === Node.ELEMENT_NODE &&
-                link.tagName === 'A' &&
-                end.nodeType === Node.TEXT_NODE &&
-                end.textContent.includes('</neko-img>')
-            ) {
-                const url = link.href;
+        let match;
+        let replaced = false;
 
-                const imageBlock = createImageBlock(url);
+        while ((match = regex.exec(html)) !== null) {
+            const url = match[1];
+            const imageBlock = createImageBlock(url);
+            p.parentNode.insertBefore(imageBlock, p);
+            replaced = true;
+        }
 
-                p.parentNode.insertBefore(imageBlock, p);
-
-                start.remove();
-                link.remove();
-                end.remove();
-
-                p.dataset.nekoProcessed = "true";
-                break;
-            }
+        if (replaced) {
+            // RIP le texte encodé
+            p.innerHTML = p.innerHTML.replace(regex, '');
+            p.dataset.nekoProcessed = "true";
         }
     }
 
     function scan() {
-        // les posts
-        document
-            .querySelectorAll('.txt-msg p')
-            .forEach(processParagraph);
-
-        // les signature
-        document
-            .querySelectorAll('.signature-msg p, .bloc-signature-msg p')
-            .forEach(processParagraph);
+        // posts
+        document.querySelectorAll('.txt-msg p').forEach(processParagraph);
+        // signatures topics
+        document.querySelectorAll('.signature-msg p, .bloc-signature-msg p').forEach(processParagraph);
+        // signature page profil
+        document.querySelectorAll('.bloc-signature-desc p, .bloc-signature-desc div').forEach(processParagraph);
     }
 
     scan();
